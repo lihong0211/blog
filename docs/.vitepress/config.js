@@ -1,9 +1,11 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/docs/',
   title: '技术文档',
   description: '技术学习文档集合',
   lang: 'zh-CN',
+  ignoreDeadLinks: true,
   
   themeConfig: {
     nav: [

@@ -422,7 +422,7 @@ Redis 中有两种 LFU 算法：
 
 以下是配置文件 `redis.conf` 中的示例：
 
-```properties
+```ini
 # 使用 volatile-lfu 策略
 maxmemory-policy volatile-lfu
 
@@ -535,7 +535,7 @@ Redis 提供了一个内置的**慢查询日志 (Slow Log)** 功能，专门用�
 
 `slowlog-log-slower-than` 和 `slowlog-max-len` 的默认配置如下（可以自行修改）：
 
-```properties
+```ini
 # The following time is expressed in microseconds, so 1000000 is equivalent
 # to one second. Note that a negative number disables the slow log, while
 # a value of zero forces the logging of every command.

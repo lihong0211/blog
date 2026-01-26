@@ -33,7 +33,7 @@ category: 代码质量
 
 举个例子，如果我给你下面两个 API 你是不是立马能知道它们是干什么用的！这就是 RESTful API 的强大之处！
 
-```plain
+```text
 GET    /classes：列出所有班级
 POST   /classes：新建一个班级
 ```
@@ -83,7 +83,7 @@ POST   /classes：新建一个班级
 
 Talk is cheap！来举个实际的例子来说明一下吧！现在有这样一个 API 提供班级（class）的信息，还包括班级中的学生和教师的信息，则它的路径应该设计成下面这样。
 
-```plain
+```text
 GET    /classes：列出所有班级
 POST   /classes：新建一个班级
 GET    /classes/{classId}：获取某个指定班级的信息
@@ -97,7 +97,7 @@ DELETE /classes/{classId}/teachers/{ID}：删除某个指定班级下的指定�
 
 反例：
 
-```plain
+```text
 /getAllclasses
 /createNewclass
 /deleteAllActiveclasses
@@ -109,13 +109,13 @@ DELETE /classes/{classId}/teachers/{ID}：删除某个指定班级下的指定�
 
 如果我们在查询的时候需要添加特定条件的话，建议使用 url 参数的形式。比如我们要查询 state 状态为 active 并且 name 为 guidegege 的班级：
 
-```plain
+```text
 GET    /classes?state=active&name=guidegege
 ```
 
 比如我们要实现分页查询：
 
-```plain
+```text
 GET    /classes?page=1&size=10 //指定第1页，每页10个数据
 ```
 

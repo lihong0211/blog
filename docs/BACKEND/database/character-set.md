@@ -249,7 +249,7 @@ SHOW SESSION VARIABLES LIKE 'character\_set\_%';
 
 1、修改配置文件
 
-```properties
+```ini
 [mysql]
 # 只针对MySQL客户端程序
 default-character-set=utf8mb4
@@ -321,7 +321,7 @@ VALUES
 
 报错信息如下：
 
-```plain
+```text
 Incorrect string value: '\xF0\x9F\x98\x98\xF0\x9F...' for column 'name' at row 1
 ```
 

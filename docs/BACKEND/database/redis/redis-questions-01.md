@@ -798,7 +798,7 @@ hz 的取值范围为 1~500。增大 hz 参数的值会提升定期删除的频�
 
 这两个参数都在 Redis 配置文件 `redis.conf` 中：
 
-```properties
+```ini
 # 默认为 10
 hz 10
 # 默认开启
@@ -886,7 +886,7 @@ noeviction
 
 可以通过 `config set maxmemory-policy 内存淘汰策略` 命令修改内存淘汰策略，立即生效，但这种方式重启 Redis 之后就失效了。修改 `redis.conf` 中的 `maxmemory-policy` 参数不会因为重启而失效，不过，需要重启之后修改才能生效。
 
-```properties
+```ini
 maxmemory-policy noeviction
 ```
 
