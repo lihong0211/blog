@@ -10,17 +10,46 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ALGO_DIR = join(__dirname, '../docs/算法');
+const ALGO_DIR = join(__dirname, '../docs/ALGORITHM');
 const README_PATH = join(ALGO_DIR, 'README.md');
 
-// 从 README 解析 题目编号 -> LeetCode slug 的映射
+// 从 README 解析 题目编号 -> LeetCode slug 的映射（支持当前列表格式）
 function parseSlugMapping() {
   const readme = readFileSync(README_PATH, 'utf-8');
   const mapping = {};
-  const regex = /\|\s*(\d+)\s*\|[^|]+\|\s*\[LeetCode\]\((https:\/\/leetcode\.cn\/problems\/([^/]+)\/)\)\s*\|/g;
+  // 匹配: - **123** [标题](./xxx.md) — [LeetCode](https://leetcode.cn/problems/slug/)
+  const problemUrlRegex = /-\s*\*\*(\d+)\*\*\s*\[[^\]]+\]\([^)]+\)\s*—\s*\[LeetCode\]\((https:\/\/leetcode\.cn\/problems\/([^/]+)\/)\)/g;
   let match;
-  while ((match = regex.exec(readme)) !== null) {
+  while ((match = problemUrlRegex.exec(readme)) !== null) {
     mapping[match[1]] = match[3];
+  }
+  // README 里只有 problemset/all?search= 的题没有 slug，用静态映射补全（题号 -> slug）
+  const FALLBACK_SLUG_MAP = {
+    193: 'valid-phone-numbers',
+    1122: 'relative-sort-array',
+    1189: 'maximum-number-of-balloons',
+    1201: 'ugly-number-iii',
+    1207: 'unique-number-of-occurrences',
+    1323: 'maximum-69-number',
+    1346: 'check-if-n-and-its-double-exist',
+    1370: 'increasing-decreasing-string',
+    1471: 'the-k-strongest-values-in-an-array',
+    1472: 'design-browser-history',
+    1669: 'merge-in-between-linked-lists',
+    1684: 'count-the-number-of-consistent-strings',
+    1721: 'swapping-nodes-in-a-linked-list',
+    1748: 'sum-of-unique-elements',
+    1768: 'merge-strings-alternately',
+    2095: 'delete-the-middle-node-of-a-linked-list',
+    2130: 'maximum-twin-sum-of-a-linked-list',
+    2181: 'merge-nodes-in-between-zeros',
+    2487: 'remove-nodes-from-linked-list',
+  };
+  const problemsetRegex = /-\s*\*\*(\d+)\*\*\s*\[[^\]]+\]\([^)]+\)\s*—\s*\[LeetCode\]\((https:\/\/leetcode\.cn\/problemset\/all\/\?search=\d+)\)/g;
+  while ((match = problemsetRegex.exec(readme)) !== null) {
+    if (!mapping[match[1]] && FALLBACK_SLUG_MAP[match[1]]) {
+      mapping[match[1]] = FALLBACK_SLUG_MAP[match[1]];
+    }
   }
   return mapping;
 }
@@ -70,6 +99,24 @@ function htmlToMarkdown(html) {
     .trim();
 }
 
+// 后处理：避免方括号被当成链接、统一示例/提示格式
+function normalizeGeneratedMarkdown(desc) {
+  // 1. 把非链接的 [xxx] 包成 `[xxx]`（含空 []），避免被解析为链接（] 后不是 ( 的才替换）
+  desc = desc.replace(/(?<!`)\[([^\]]*)\](?!\()/g, (_, inner) => '`[' + inner + ']`');
+
+  // 2. 示例：把 **输入：** **输出：** **解释：** 行改为列表项（- 开头），并保证冒号后有空格
+  desc = desc.replace(/^(\s*)(\*\*输入：\*\*)\s*/gm, '$1- $2 ');
+  desc = desc.replace(/^(\s*)(\*\*输出：\*\*)\s*/gm, '$1- $2 ');
+  desc = desc.replace(/^(\s*)(\*\*解释：\*\*)\s*/gm, '$1- $2 ');
+
+  // 3. 提示：去掉行首制表符，让 \t- 变成普通 - 列表项
+  desc = desc.replace(/^\t+(-\s)/gm, '$1');
+  // 有制表符但不是 - 开头的，转为列表项
+  desc = desc.replace(/^\t+([^-\n])/gm, '- $1');
+
+  return desc.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 // 检查文件是否已有题目描述
 function hasDescription(content) {
   return /##\s*题目描述\s*\n/.test(content);
@@ -116,7 +163,7 @@ async function main() {
         continue;
       }
 
-      const desc = htmlToMarkdown(rawContent);
+      const desc = normalizeGeneratedMarkdown(htmlToMarkdown(rawContent));
       const difficulty = question.difficulty || '';
 
       const descSection = `
