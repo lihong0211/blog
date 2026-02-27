@@ -6,6 +6,9 @@ export default defineConfig({
   description: '技术学习文档集合',
   lang: 'zh-CN',
   ignoreDeadLinks: true,
+  head: [
+    ['link', { rel: 'icon', type: 'image/x-icon', href: 'https://doctor-dog.com/static/favicon.ico' }],
+  ],
   
   themeConfig: {
     nav: [
