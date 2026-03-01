@@ -3,15 +3,20 @@
  * 从 LeetCode 获取题目描述并注入到题解 .md 文件中
  * 用法: node scripts/inject-leetcode-description.mjs [--force]
  *  --force  强制重新生成，覆盖已有的题目描述
+ *
+ * 题目内容会缓存到 scripts/.leetcode-cache/{slug}.json，
+ * 再次执行时优先读缓存，不会重复请求 LeetCode。
+ * 若需重新拉取某题，删除对应 .json 后重跑即可。
  */
 
-import { readFileSync, writeFileSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ALGO_DIR = join(__dirname, '../docs/ALGORITHM');
 const README_PATH = join(ALGO_DIR, 'README.md');
+const CACHE_DIR = join(__dirname, '.leetcode-cache');
 
 // 从 README 解析 题目编号 -> LeetCode slug 的映射（支持当前列表格式）
 function parseSlugMapping() {
@@ -54,8 +59,15 @@ function parseSlugMapping() {
   return mapping;
 }
 
-// 从 LeetCode CN GraphQL 获取中文题目描述
+// 从 LeetCode CN GraphQL 获取中文题目描述（带本地缓存，避免每次请求）
 async function fetchProblemContent(slug) {
+  if (!existsSync(CACHE_DIR)) {
+    mkdirSync(CACHE_DIR, { recursive: true });
+  }
+  const cachePath = join(CACHE_DIR, `${slug}.json`);
+  if (existsSync(cachePath)) {
+    return JSON.parse(readFileSync(cachePath, 'utf-8'));
+  }
   const query = `
     query questionContent($titleSlug: String!) {
       question(titleSlug: $titleSlug) {
@@ -76,7 +88,11 @@ async function fetchProblemContent(slug) {
   });
   const json = await res.json();
   if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL Error');
-  return json.data?.question;
+  const question = json.data?.question;
+  if (question) {
+    writeFileSync(cachePath, JSON.stringify(question, null, 0), 'utf-8');
+  }
+  return question;
 }
 
 // 将 LeetCode 返回的 HTML 转为简化的 Markdown
@@ -101,17 +117,47 @@ function htmlToMarkdown(html) {
 
 // 后处理：避免方括号被当成链接、统一示例/提示格式
 function normalizeGeneratedMarkdown(desc) {
-  // 1. 把非链接的 [xxx] 包成 `[xxx]`（含空 []），避免被解析为链接（] 后不是 ( 的才替换）
-  desc = desc.replace(/(?<!`)\[([^\]]*)\](?!\()/g, (_, inner) => '`[' + inner + ']`');
+  // 1. 把非链接的 [xxx] 包成 `[xxx]`，避免被解析为链接（] 后不是 ( 的才替换）
+  //    但不要包裹：空 []、以及 ['] ["]（括号在引号内表示字符）
+  desc = desc.replace(/(?<!`)\[([^\]]*)\](?!\()/g, (match, inner) => {
+    // 不包裹：空 []、引号 ['"]、纯数字下标 [0][1]（保持为原文）
+    if (inner === '' || inner === "'" || inner === '"' || /^\d+$/.test(inner.trim())) return match;
+    return '`[' + inner + ']`';
+  });
 
-  // 2. 示例：把 **输入：** **输出：** **解释：** 行改为列表项（- 开头），并保证冒号后有空格
+  // 2. 修正 ***（加粗+斜体粘连）为 **
+  desc = desc.replace(/\*\*\*/g, '**');
+
+  // 2a. 修正 "最长 子串** **" 这种（加粗被拆开）为 **最长子串**
+  desc = desc.replace(/最长\s+子串\*\* \*\*/g, '**最长子串**');
+
+  // 2b. 修正 **和为目标值 **`target`* 这种（变量后的残留斜体 *）为 **和为目标值** `target`**
+  desc = desc.replace(/\*\*([^*]+) \*\*`([^`]+)`\*/g, '**$1** `$2`**');
+  // 2b2. 修正 `target`**  的那 **两个** 这种（加粗被拆开）为 `target` **的那两个**
+  desc = desc.replace(/`([^`]+)`\*\*  的那 \*\*两个\*\*/g, '`$1` **的那两个**');
+
+  // 2c. 修正 * *`xxx`* * 这种（头节点等变量外的多余斜体）为 `xxx`
+  desc = desc.replace(/\* \*`([^`]+)`\* \*/g, '`$1`');
+
+  // 2d. 修正 arr1`[i]`、arr2`[i]` 这种（变量与下标被拆开）为 `arr1[i]`、`arr2[i]`
+  desc = desc.replace(/(\w+)`\[([ij])\]`/g, '`$1[$2]`');
+
+  // 3. 修正 `x`* * 这种（反引号+残留斜体）为 **x**
+  desc = desc.replace(/`(\w)`\* \*/g, '**$1**');
+
+  // 3b. 括号题：把多个括号的独立代码块合并为一个，避免逗号孤零零（兼容 `'`['`，`']`'` 这种断开的）
+  desc = desc.replace(
+    /`'\(`'`，`'\)'`，`'\{'`，`'\}'`，(?:`'\[`'`，`'\]'`|`'`\[`，`'\]`'`)/g,
+    "`'('，')'，'{'，'}'，'['，']'`"
+  );
+
+  // 4. 示例：把 **输入：** **输出：** **解释：** 行改为列表项（- 开头），并保证冒号后有空格
   desc = desc.replace(/^(\s*)(\*\*输入：\*\*)\s*/gm, '$1- $2 ');
   desc = desc.replace(/^(\s*)(\*\*输出：\*\*)\s*/gm, '$1- $2 ');
   desc = desc.replace(/^(\s*)(\*\*解释：\*\*)\s*/gm, '$1- $2 ');
 
-  // 3. 提示：去掉行首制表符，让 \t- 变成普通 - 列表项
+  // 5. 提示：去掉行首制表符，让 \t- 变成普通 - 列表项
   desc = desc.replace(/^\t+(-\s)/gm, '$1');
-  // 有制表符但不是 - 开头的，转为列表项
   desc = desc.replace(/^\t+([^-\n])/gm, '- $1');
 
   return desc.replace(/\n{3,}/g, '\n\n').trim();

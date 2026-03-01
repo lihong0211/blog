@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 *.local
 
+# LeetCode 题目描述缓存（脚本优先读此目录，避免每次请求接口）
+scripts/.leetcode-cache
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
