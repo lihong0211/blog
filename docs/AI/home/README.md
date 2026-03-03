@@ -1,6 +1,5 @@
 # service/ai 技术文档总览
 
-  
 > 对应代码：`service/ai/`（全模块）
 
 ---
@@ -103,6 +102,54 @@ MCP 工具集层 (06)
 | 模型微调 | Unsloth + LoRA/QLoRA + TRL（SFTTrainer/GRPOTrainer） |
 | Web 框架 | Flask + SSE（流式推送）+ WebSocket（实时语音） |
 | 数据库 | MySQL（SQLAlchemy ORM） |
+
+---
+
+## 成果展示
+
+### 向量库层 (01)
+
+![向量库磁盘存储结构](/images/vectorDB-1.png)
+![向量库双存储与数据流](/images/vectorDB-2.png)
+![向量库检索流程](/images/vectorDB-3.png)
+
+### RAG 层 (02)
+
+![RAG 流水线示意](/images/rag-1.png)
+![RAG 检索与重排](/images/rag-2.png)
+
+### 知识库管理层 (03)
+
+![知识库三表结构](/images/kb-1.png)
+![文档解析与分段](/images/kb-2.png)
+![知识库上传流程](/images/kb-3.png)
+![向量化与索引更新](/images/kb-4.png)
+![知识库管理界面示意](/images/kb-5.png)
+
+### LangGraph Agent 工作流层 (04)
+
+![LangGraph StateGraph 示意](/images/langchain-1.png)
+![Agent 节点与边](/images/langchain-2.png)
+![多 Agent 协作流程](/images/langchain-3.png)
+
+### A2A 协议层 (05)
+
+![A2A 协议与 Task 生命周期](/images/A2A-1.png)
+![Orchestrator 编排流程](/images/A2A-2.png)
+
+### MCP 工具集层 (06)
+
+![MCP 协议与 ChatPPT 集成](/images/mcp-1.png)
+![MCP 工具调用流程](/images/mcp-2.png)
+
+### 工具能力层 (08) - Text2SQL
+
+![Text2SQL 流程示意](/images/text2sql-1.png)
+
+### 微调实验层 (09)
+
+![LoRA 微调流程](/images/lora-1.png)
+![SFT / GRPO 训练流程](/images/lora-2.png)
 
 ---
 
